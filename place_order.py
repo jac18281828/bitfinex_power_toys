@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# bitfinex https://docs.bitfinex.com/reference#ws-public-books orders
-
 import certifi
 import math
 import ssl
@@ -45,18 +43,21 @@ class wsclient:
         print(event_data)
         await websocket.ping(event_data)
 
-    async def handle_json(self, message, event_dict):
+    async def handle_json(self, websocket, message, event_dict):
         event = event_dict['event']
         print('event = %s' % event)
         if event == 'auth':
             if event_dict['status'] == 'FAILED':
                 self.is_running = False
+            else:
+                await self.on_auth(websocket)
 
     async def handle_model(self, message, event_dict):
         print('channel %d' % event_dict[0])
 
         if isinstance(event_dict[1], str):
             print('event   %s' % event_dict[1])
+            print(message)
         else:
             print('payload %s' % event_dict[1])
 
@@ -67,7 +68,7 @@ class wsclient:
             event_dict = json.loads(message)
 
             if 'event' in event_dict:
-                await self.handle_json(message, event_dict)
+                await self.handle_json(websocket, message, event_dict)
             else:
                 await self.handle_model(message, event_dict)
         finally:
@@ -116,6 +117,38 @@ class wsclient:
             
     async def on_open(self, websocket):
         await self.send_auth(websocket)
+
+    async def on_auth(self, websocket):
+
+        request_id = self.increment_sequence()
+        await self.send_order(websocket, request_id)
+
+    async def send_order(self, websocket, request_id):
+        
+        time_gmt = time.gmtime(time.time() + 120.0)
+        
+        tif_string = time.strftime('%Y-%m-%d %H:%M:%S', time_gmt)
+        
+        order_event = {
+            'cid': request_id,
+            'amount': '0.005',
+            'price': '5000',
+            'symbol': 'tBTCUSD',
+            'tif': tif_string,
+            'type': 'EXCHANGE LIMIT',
+            'meta': { 'name': 'value' },
+        }
+        model_data = [0, 'on', None, order_event]
+        await self.send_json(websocket, model_data)
+
+    async def send_cancel(self, websocket, request_id):
+        
+        order_cancel = {
+            'cid': request_id,
+        }
+        model_data = [0, 'oc', None, order_cancel]
+        await self.send_json(websocket, model_data)
+        
         
     async def run_event_loop(self):
         try:

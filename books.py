@@ -9,7 +9,6 @@ import json
 import time
 import zlib
 import datetime
-from decimal import Decimal
 
 # Example implementation including the bitfinex checksum
 
@@ -41,8 +40,8 @@ class wsclient:
 
     def format_entry(self, orderid, amount):
 
-        entry = '{:d}'.format(orderid) + ':'
-        ## 8 here, expected digits for floating point precision
+        entry = '{:d}'.format(orderid) + ':' 
+	# 8 here, expected digits for floating point precision
         return entry + '{0:.8f}'.format(amount).rstrip('0').rstrip('.')
             
 
