@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+`#!/usr/bin/env python
 
 # bitfinex https://docs.bitfinex.com/reference#ws-public-books orders
 
@@ -17,9 +17,9 @@ class wsclient:
 
     uri = 'wss://api-pub.bitfinex.com/ws/2'
 
-    def __init__(self):
+    def __init__(self, apikeyfile):
 
-        with open('apikey.json', 'r') as apikeyfile:
+        with open(apikeyfile, 'r') as apikeyfile:
             self.apikey = json.load(apikeyfile)
         
         self.update_time = 0.0
@@ -141,12 +141,19 @@ class wsclient:
 
 
 if __name__ == '__main__':
-    try:
-        wsc = wsclient()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(wsc.run_event_loop())
-    except Exception as e:
-        print('Not started: %s' % e)
-    finally:
-        wsc.is_running = False
-        loop.close()
+    if len(sys.argv) > 1:    
+        try:
+            apikeyfile = sys.argv[1]
+            wsc = wsclient(apikeyfile)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(wsc.run_event_loop())
+        except Exception as e:
+            print('Not started: %s' % e)
+            sys.exit(1)
+        finally:
+            wsc.is_running = False
+            loop.close()
+            sys.exit(0)
+    else:
+        print('apikeyfile is required')
+        sys.exit(1)

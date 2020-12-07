@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import certifi
+import sys
 import math
 import ssl
 import asyncio
@@ -15,11 +16,11 @@ class wsclient:
 
     uri = 'wss://api-pub.bitfinex.com/ws/2'
 
-    def __init__(self):
+    def __init__(self, apikeyfile, price):
 
-        with open('apikey.json', 'r') as apikeyfile:
+        with open(apikeyfile, 'r') as apikeyfile:
             self.apikey = json.load(apikeyfile)
-        
+        self.price = price
         self.update_time = 0.0
         self.sequence = 1
         self.is_running = True
@@ -93,7 +94,7 @@ class wsclient:
         apikey = self.apikey['key']
         secret = self.apikey['secret']
 
-        # counted millis + a unique index up to 1000
+        # counted millis + a unique index
         authnonce = str(math.floor(time.time() * 1000000.0))
         authpayload = 'AUTH' + authnonce
         
@@ -132,7 +133,7 @@ class wsclient:
         order_event = {
             'cid': request_id,
             'amount': '0.005',
-            'price': '5000',
+            'price': str(self.price),
             'symbol': 'tBTCUSD',
             'tif': tif_string,
             'type': 'EXCHANGE LIMIT',
@@ -174,12 +175,21 @@ class wsclient:
 
 
 if __name__ == '__main__':
-    try:
-        wsc = wsclient()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(wsc.run_event_loop())
-    except Exception as e:
-        print('Not started: %s' % e)
-    finally:
-        wsc.is_running = False
-        loop.close()
+    if len(sys.argv) > 2:    
+        try:
+            apikeyfile = sys.argv[1]
+            price = float(sys.argv[2])
+            wsc = wsclient(apikeyfile, price)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(wsc.run_event_loop())
+        except Exception as e:
+            print('Not started: %s' % e)
+            sys.exit(1)
+        finally:
+            wsc.is_running = False
+            loop.close()
+            sys.exit(0)
+
+    else:
+        print('apikey and price are required')
+        sys.exit(1)
