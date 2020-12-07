@@ -8,7 +8,6 @@ import ssl
 import certifi
 import json
 import urllib.request
-import base64
 from urllib.parse import urlencode
 
 
@@ -40,8 +39,6 @@ class PostOrder:
         form_payload = json.dumps(order_payload)        
 
         signature_block = '/api/' + api_path + nonce + form_payload
-        print(signature_block)
-
 
         signature = hmac.new(api_secret,
                              msg=signature_block.encode('utf-8'),
@@ -53,8 +50,6 @@ class PostOrder:
             'bfx-apikey': api_key,
             'bfx-signature': signature
         }
-
-        print(headers)
 
         api_url = self.ENDPOINT + api_path
 

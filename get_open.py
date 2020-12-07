@@ -25,17 +25,18 @@ class PostOrder:
         api_path = 'v2/auth/r/orders'
         
         api_key = self.apikey['key']
+        
+        api_secret = self.apikey['secret'].encode('utf-8')
+
+        
         timestamp = str(int(round(time.time() * 1000000.0)))
         nonce = timestamp
 
-        order_payload = {
-        }
+        order_payload = {}
 
         body = urlencode(order_payload)
 
         signature_block = '/api/' + api_path + nonce + body
-
-        api_secret = self.apikey['secret'].encode('utf-8')
 
         signature = hmac.new(api_secret, msg=signature_block.encode('utf-8'), digestmod=hashlib.sha384).hexdigest()
 

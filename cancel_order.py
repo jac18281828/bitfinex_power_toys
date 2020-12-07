@@ -7,7 +7,6 @@ import ssl
 import certifi
 import json
 import urllib.request
-import base64
 from urllib.parse import urlencode
 
 
@@ -25,23 +24,33 @@ class PostCancel:
         api_path = 'v2/auth/w/order/cancel'
         
         api_key = self.apikey['key']
-        timestamp = str(int(round(time.time() * 1000000.0)))
-        nonce = timestamp
-        order_payload = {
-            'id': orderid
-        }
-
-        body = urlencode(order_payload)
-
-        signature_block = '/api/' + api_path + nonce + body
-
         api_secret = self.apikey['secret'].encode('utf-8')
 
-        signature = hmac.new(api_secret, msg=signature_block.encode('utf-8'), digestmod=hashlib.sha384).hexdigest()
+        ts = time.gmtime()
+        cid_date = time.strftime("%Y-%m-%d", ts)
+        print(cid_date)
+
+        cancel_payload = {
+            'id': orderid,
+            'cid_date': cid_date 
+        }
+
+        form_payload = json.dumps(cancel_payload)
+
+        timestamp = str(int(round(time.time() * 1000000.0)))
+        nonce = timestamp
+
+        signature_block = '/api/' + api_path + nonce + form_payload
+
+        signature = hmac.new(api_secret,
+                             msg=signature_block.encode('utf-8'),
+                             digestmod=hashlib.sha384).hexdigest()
 
         headers = {
             'Content-Type': 'application/json',
-            'bfx-nonce': nonce,
+            'bfx-nonce'
+
+: nonce,
             'bfx-apikey': api_key,
             'bfx-signature': signature
         }
@@ -51,7 +60,8 @@ class PostCancel:
         api_request = urllib.request.Request(
             api_url,
             headers=headers,
-            data=body.encode('utf-8')
+            data=form_payload.encode('utf-8'),
+            method='POST'
         )
 
         with urllib.request.urlopen(api_request, context=ssl.create_default_context(cafile=certifi.where())) as api_call:
@@ -71,12 +81,13 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         try:
             apikeyfile = sys.argv[1]
-            orderid = sys.argv[2]
+            orderid = int(sys.argv[2])
             po = PostCancel(apikeyfile)
             po.post_cancel(orderid)
             sys.exit(0)
         except Exception as e:
             print('Failed. '+repr(e))
+            print(e.read())            
             sys.exit(1)
     else:
         print('apikey file and order id are required')
