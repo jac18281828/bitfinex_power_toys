@@ -37,8 +37,7 @@ class PostOrder:
             'amount': str(quantity)
         }
 
-        form_payload = urlencode(order_payload)
-        print(form_payload)
+        form_payload = json.dumps(order_payload)        
 
         signature_block = '/api/' + api_path + nonce + form_payload
         print(signature_block)
@@ -49,6 +48,7 @@ class PostOrder:
                              digestmod=hashlib.sha384).hexdigest()
 
         headers = {
+            'Content-Type': 'application/json',
             'bfx-nonce': nonce,
             'bfx-apikey': api_key,
             'bfx-signature': signature
