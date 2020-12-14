@@ -8,10 +8,9 @@ import ssl
 import certifi
 import json
 import urllib.request
-from urllib.parse import urlencode
 
 
-# Post a limit order in bitcoin
+# Post a limit order in SYMBOL
 class PostOrder:
     ENDPOINT = 'https://api.bitfinex.com/'
     SYMBOL   = 'tBTCUSD'

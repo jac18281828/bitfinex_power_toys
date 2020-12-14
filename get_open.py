@@ -8,37 +8,33 @@ import certifi
 import json
 import urllib.request
 import base64
-from urllib.parse import urlencode
+import math
 
-
-# Post a limit order in bitcoin
-class PostOrder:
+# Post an order status query
+class PostQuery:
     ENDPOINT = 'https://api.bitfinex.com/'
-    SYMBOL   = 'tBTCUSD'
 
     def __init__(self, apikeyfile):
         with open(apikeyfile, 'r') as apikeyfile:
             self.apikey = json.load(apikeyfile)
 
-    def post_order(self):
+    def post_query(self, order_payload):
 
         api_path = 'v2/auth/r/orders'
         
         api_key = self.apikey['key']
-        
         api_secret = self.apikey['secret'].encode('utf-8')
 
-        
-        timestamp = str(int(round(time.time() * 1000000.0)))
+        timestamp = str(math.floor(time.time() * 1000000.0))
         nonce = timestamp
 
-        order_payload = {}
+        form_payload = json.dumps(order_payload)        
 
-        body = urlencode(order_payload)
+        signature_block = '/api/' + api_path + nonce + form_payload
 
-        signature_block = '/api/' + api_path + nonce + body
-
-        signature = hmac.new(api_secret, msg=signature_block.encode('utf-8'), digestmod=hashlib.sha384).hexdigest()
+        signature = hmac.new(api_secret,
+                             msg=signature_block.encode('utf-8'),
+                             digestmod=hashlib.sha384).hexdigest()
 
         headers = {
             'Content-Type': 'application/json',
@@ -54,7 +50,8 @@ class PostOrder:
         api_request = urllib.request.Request(
             api_url,
             headers=headers,
-            data=body.encode('utf-8')
+            data=form_payload.encode('utf-8'),
+            method='POST'            
         )
 
         with urllib.request.urlopen(api_request, context=ssl.create_default_context(cafile=certifi.where())) as api_call:
@@ -72,18 +69,30 @@ class PostOrder:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
+    if len(sys.argv) == 2:
         try:
             apikeyfile = sys.argv[1]
-            po = PostOrder(apikeyfile)
-            po.post_order()
+            po = PostQuery(apikeyfile)
+            po.post_query({})
             sys.exit(0)
         except Exception as e:
             print('Failed. '+repr(e))
+            print(e.read())            
             sys.exit(1)
     else:
-        print('apikeyfile is required')
-        sys.exit(1)
+        if len(sys.argv) > 2:
+            try:
+                apikeyfile = sys.argv[1]
 
+                id_array = [ int(k) for k in sys.argv[2:]]
+                po = PostQuery(apikeyfile)
+                po.post_query({ 'id': id_array })
+                sys.exit(0)
+            except Exception as e:
+                print('Failed. '+repr(e))
+                print(e.read())                
+                sys.exit(1)
+        else:
+            print('apikeyfile is required')
+            sys.exit(1)
 
-            
